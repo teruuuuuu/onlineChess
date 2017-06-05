@@ -6,5 +6,5 @@ node.jsで作成したchessになります
 npm install
 npm start
 ```
-それから以下のURLにアクセス
+それから以下のURLにアクセス    
 http://localhost:8888/onlineChess.html

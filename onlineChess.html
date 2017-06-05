@@ -1,0 +1,136 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>nodejs game</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/subclass.js"></script>
+  <script src="/chess.js"></script>
+  <script type="text/javascript">
+    var msgArea;
+    var socketio = io.connect('http://localhost:8888');
+    var gameController = new GameController();
+
+    
+    socketio.on("connected", function(name){});
+    socketio.on("roomIn", function(data){roomIn(data);});
+    socketio.on("turnChange", function(data){turnChange(data);});
+    socketio.on("gameEnd", function(data){gameEnd(data);});
+    socketio.on("publish", function(data){addMessage(data.value);});
+    socketio.on("disconnect", function(){});
+
+    function selectRoom(){
+      console.log("select Room");
+      var data = {};
+      var name = document.getElementById("name_input");
+      var room = document.getElementById("room_input");
+      data.name = name.value;
+      data.room = room.value;
+      socketio.emit("roomSelect", data);
+    }
+
+    function roomIn(data){
+      if(data.result == 0){
+        alert(data.msg);
+      }else{
+        var initArea = document.getElementById("initArea");
+        initArea.setAttribute("style", "display:none");
+        
+        document.getElementById("chatArea").setAttribute("style", "dispaly:");        
+        document.getElementById("chessArea").setAttribute("style", "display:");
+
+        var domMsg = document.createElement('div');
+        domMsg.innerHTML = new Date().toLocaleTimeString() + ' ' + data.msg;
+        msgArea.appendChild(domMsg);
+        
+        var team = "white";
+        if(data.team == "B"){
+          team = "black";
+        }
+        document.getElementById("teamView").innerHTML = "You are " + team;
+        gameController.setTeam(data.team, socketio);
+      }
+    }
+	
+	function turnChange(data){
+		if(data.msg != ''){
+			var domMsg = document.createElement('div');
+        	domMsg.innerHTML = new Date().toLocaleTimeString() + ' ' + data.msg;
+        	//msgArea.appendChild(domMsg);
+        	msgArea.insertBefore(domMsg, msgArea.firstChild);
+		}
+		var pieces = data.pieces;
+        var turn = data.turn;
+        if(data.check){
+        	if(gameController.myTeam == turn){
+        		alert("Check Mate");
+        	}
+        }
+        gameController.setTurn(pieces, turn);
+	}
+	function gameEnd(data){
+		alert("gameEnd");
+	}
+    function start(name){
+      socketio.emit("connected", name);
+    }
+
+    function publishMessage(){
+      var textInput = document.getElementById('msg_input');
+      socketio.emit("publish", textInput.value);
+      textInput.value='';
+    }
+
+    function addMessage(msg){
+      var domMsg = document.createElement('div');
+      domMsg.innerHTML = new Date().toLocaleTimeString() + ' ' + msg;
+      //msgArea.appendChild(domMsg);
+      msgArea.insertBefore(domMsg, msgArea.firstChild);
+    }
+
+    
+	function start(){
+		msgArea = document.getElementById("msg");
+		gameController.boardInit();
+	}
+	
+	function viewAtackArea(team){
+		gameController.viewAtackArea(team, true);
+	}
+	
+	
+  </script>
+</head>
+ <body onload="start();">
+  <h1>online Chess</h1>
+  <div id="initArea">
+    <h1>名前入力</h1>
+    <input type="text" id="name_input" style="width:200px;" />
+    <h1>部屋選択</h1>
+    <select id="room_input" >
+    	<option value="1">1</option>
+    	<option value="2">2</option>
+    	<option value="3">3</option>
+    	<option value="4">4</option>
+    	<option value="5">5</option>
+    </select>
+    <button onclick="selectRoom();">選択</button>
+  </div>
+  </div>
+	<div id="chessArea" style="display:none">
+		<h3><div id="teamView"></div></h1>
+		<canvas id="chess_canvas"></canvas>
+		<p>turn: <span id="turn"></span></p>
+		<p>White Win: <span id="wWin"></span> Black Win: <span id="bWin"></span></p>
+		
+		<button onclick="viewAtackArea('W');">White Area</button>
+		<button onclick="viewAtackArea('B');">Black Area</button><br />
+		<button onclick="start();">Restart</button>
+		
+	</div>
+	<div id="chatArea" style="display:none">
+	    <button onclick="publishMessage();">コメント</button>
+	    <input type="text" id="msg_input" style="width:200px;" />
+	    <div id="msg"></div>
+	</div>
+</body>
+</html>
